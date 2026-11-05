@@ -499,5 +499,215 @@ drwx------ 2 jfyouni8912 jfyouni8912 4096 Nov  5 20:52 backup
 이를 통해 Linux에서 현재 작업 위치를 파악하고, 숨김 항목과 파일 권한을 함께 확인하는 방법을 익혔다.
 
 ---
+### 실습 6. Docker 설치 및 컨테이너 실행 확인
 
+#### ① 실습 목적
+
+Ubuntu(WSL2) 환경에서 Docker CLI와 Docker Engine의 정상 작동 여부를 확인한다. Docker 이미지를 다운로드하고 컨테이너를 실행한 후, 이미지 및 컨테이너 목록을 확인한다.
+
+#### ② 실행 명령어
+
+```bash
+docker --version
+docker info
+docker run hello-world
+docker images
+docker ps -a
+```
+
+#### ③ 명령어 설명
+
+| 명령어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `docker --version` | Version(버전) | Docker CLI 버전 확인 |
+| `docker info` | Information(정보) | Docker 클라이언트 및 엔진 정보 확인 |
+| `docker run hello-world` | Run(실행) | hello-world 이미지로 컨테이너 생성 및 실행 |
+| `docker images` | Images(이미지 목록) | 로컬에 저장된 이미지 확인 |
+| `docker ps -a` | Process Status / All(전체) | 종료된 컨테이너를 포함한 전체 컨테이너 목록 확인 |
+
+**추가 설명**
+
+Docker 이미지는 컨테이너 실행에 필요한 파일과 설정을 포함하는 패키지이며, 컨테이너는 이미지를 기반으로 생성된 실행 환경이다.
+
+`docker run`은 이미지가 로컬에 없으면 Docker Hub에서 이미지를 다운로드한 후 컨테이너를 생성하고 실행한다.
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+Docker 버전 확인:
+
+```text
+Docker version 29.9.2, build a82e528
+```
+
+Docker 엔진 정보(주요 항목 발췌):
+
+```text
+Server:
+ Containers: 0
+ Images: 0
+ Server Version: 29.9.2
+ Operating System: Docker Desktop
+ OSType: linux
+ Architecture: x86_64
+ Kernel Version: 6.18.54.1-microsoft-standard-WSL2
+```
+
+hello-world 실행:
+
+```text
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+4f55086f7dd0: Pull complete
+d5e71e642bf5: Download complete
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+```
+
+이미지 목록:
+
+```text
+IMAGE                ID             DISK USAGE   CONTENT SIZE   EXTRA
+hello-world:latest   c567b231f656       25.9kB         9.49kB    U
+```
+
+컨테이너 목록:
+
+```text
+CONTAINER ID   IMAGE         COMMAND    CREATED         STATUS                     PORTS     NAMES
+88357b0dd215   hello-world   "/hello"   2 minutes ago   Exited (0) 2 minutes ago             stupefied_kare
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `Docker version 29.9.2` | Docker CLI 정상 설치 |
+| `Server Version: 29.9.2` | Docker Engine 정상 연결 |
+| `Hello from Docker!` | 컨테이너 실행 성공 |
+| `hello-world:latest` | 이미지 다운로드 및 저장 확인 |
+| `Exited (0)` | 컨테이너가 오류 없이 정상 종료됨 |
+
+**실습 결과 요약**
+
+Docker Desktop과 Ubuntu(WSL2)의 연동을 확인하고, hello-world 이미지를 다운로드하여 첫 번째 컨테이너를 성공적으로 실행하였다.
+
+---
+
+### 트러블슈팅 1. Ubuntu에서 Docker 명령어를 인식하지 못하는 문제
+
+#### ① 문제 상황
+
+Ubuntu 터미널에서 `docker --version`을 실행했으나 Docker 명령어를 찾을 수 없다는 오류가 발생하였다.
+
+#### ② 오류 메시지
+
+```text
+The command 'docker' could not be found in this WSL 2 distro.
+We recommend to activate the WSL integration in Docker Desktop settings.
+```
+
+#### ③ 원인
+
+Docker Desktop의 WSL Integration 설정에서 Ubuntu 배포판에 대한 Docker 연동이 활성화되지 않은 상태였다.
+
+#### ④ 해결 과정
+
+1. Docker Desktop 실행
+2. Settings → Resources → WSL Integration 이동
+3. Ubuntu 스위치를 ON으로 변경
+4. Apply & Restart 클릭
+5. Ubuntu 터미널에서 Docker 버전 재확인
+
+#### ⑤ 해결 확인 결과
+
+```text
+Docker version 29.9.2, build a82e528
+```
+
+Docker 명령어가 정상적으로 인식되었다.
+
+---
+
+### 트러블슈팅 2. Docker 엔진 접근 권한 오류
+
+#### ① 문제 상황
+
+Docker 명령어는 인식되었지만 `docker info` 실행 시 Docker 엔진에 접근할 수 없었다.
+
+#### ② 오류 메시지
+
+```text
+Server:
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+```
+
+#### ③ 원인 분석
+
+Docker 소켓의 권한을 확인하였다.
+
+```bash
+ls -l /var/run/docker.sock
+```
+
+실제 결과:
+
+```text
+srw-rw---- 1 root docker 0 Nov  5 21:45 /var/run/docker.sock
+```
+
+현재 사용자의 그룹도 확인하였다.
+
+```bash
+groups
+```
+
+실제 결과:
+
+```text
+jfyouni8912 adm cdrom sudo dip plugdev users
+```
+
+Docker 소켓은 `root` 사용자와 `docker` 그룹에 접근 권한이 있었지만, 현재 사용자는 `docker` 그룹에 속하지 않았다.
+
+#### ④ 해결 과정
+
+현재 사용자를 Docker 그룹에 추가하였다.
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+이후 Ubuntu를 종료하고 다시 접속하여 변경된 그룹 권한을 적용하였다.
+
+#### ⑤ 해결 확인 결과
+
+그룹 목록:
+
+```text
+jfyouni8912 adm cdrom sudo dip plugdev users docker
+```
+
+Docker 엔진 정보:
+
+```text
+Server:
+ Containers: 0
+ Images: 0
+ Server Version: 29.9.2
+ Operating System: Docker Desktop
+```
+
+Docker 엔진에 정상적으로 접근할 수 있게 되었으며, `docker run hello-world`도 성공적으로 실행되었다.
+
+**실습 결과 요약**
+
+Docker 소켓의 소유 그룹과 현재 사용자 그룹을 비교하여 권한 오류의 원인을 확인하고 해결하였다.
+
+**보안 참고:** `docker` 그룹은 사실상 관리자 수준의 권한을 부여하므로 신뢰할 수 있는 사용자에게만 부여해야 한다.
+
+---
 
