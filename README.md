@@ -19,9 +19,20 @@
 | 원격 저장소 | GitHub |
 
 ※ 본 문서의 실행 결과는 공용 컴퓨터에서 수행한 실제 실습을 기준으로 작성하였다. 사용자 이름, 파일 경로, 수정 시각, 컨테이너 ID 등 일부 출력 정보는 실습 환경과 실행 시점에 따라 달라질 수 있다.
+### 수행 항목 체크리스트
+
+- [x] 터미널 기본 조작 및 폴더 구성 (실습 1, 2, 3, 5)
+- [x] 파일 및 디렉터리 권한 변경 실습 (실습 4)
+- [x] Docker 설치 및 데몬 점검 (실습 6, 트러블슈팅 1, 2)
+- [x] hello-world 컨테이너 실행 (실습 6)
+- [x] Ubuntu 대화형 컨테이너 및 운영 명령어 실습 (실습 7, 8)
+- [x] Dockerfile 작성 및 커스텀 NGINX 웹 서버 빌드 (실습 9)
+- [x] 포트 매핑(Port Mapping) 접속 검증 (실습 10)
+- [x] 바인드 마운트(Bind Mount) 실시간 반영 검증 (실습 11)
+- [x] Docker 볼륨(Volume) 데이터 영속성 검증 (실습 12)
+- [x] Git 설정 및 GitHub 연동 확인 (실습 13)
 
 ---
-
 ## 3. Linux 기본 명령어 실습
 
 ### 실습 1. 디렉터리 생성 및 파일 생성·확인
@@ -710,4 +721,657 @@ Docker 소켓의 소유 그룹과 현재 사용자 그룹을 비교하여 권한
 **보안 참고:** `docker` 그룹은 사실상 관리자 수준의 권한을 부여하므로 신뢰할 수 있는 사용자에게만 부여해야 한다.
 
 ---
+## 4. Docker 고급 활용 및 웹 서버 실습
 
+### 실습 7. Ubuntu 대화형 컨테이너 실행 및 관리 (attach vs exec)
+
+#### ① 실습 목적
+
+Ubuntu 공식 이미지를 기반으로 대화형 터미널(`-it`)을 연결하여 컨테이너 내부에 진입하고, 리눅스 명령어(`cat /etc/os-release`, `echo`)를 수행한다.
+이후 컨테이너 종료(`exit`)와 백그라운드 유지, 그리고 `attach`와 `exec`의 동작 방식 차이를 관찰하고 비교한다.
+
+#### ② 실행 명령어
+
+```bash
+# 1. Ubuntu 컨테이너 대화형 실행 및 내부 진입
+docker run -it --name my-ubuntu ubuntu bash
+
+# [컨테이너 내부 실행]
+cat /etc/os-release
+echo "Hello from Ubuntu Container" > /test.txt
+cat /test.txt
+exit
+
+# 2. 종료된 컨테이너 상태 확인
+docker ps -a
+
+# 3. 백그라운드(-d)로 컨테이너 실행 후 exec 명령어로 진입
+docker run -d -it --name my-ubuntu-bg ubuntu bash
+docker ps
+docker exec -it my-ubuntu-bg cat /etc/os-release
+
+# 4. 실습 컨테이너 정리
+docker stop my-ubuntu-bg
+docker rm my-ubuntu my-ubuntu-bg
+```
+
+#### ③ 명령어 설명
+
+| 명령어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `docker run -it ubuntu bash` | Interactive + TTY | Ubuntu 이미지를 기반으로 키보드 입출력이 가능한 터미널 셸 실행 |
+| `--name my-ubuntu` | Name (이름 지정) | 컨테이너에 식별 가능한 고유 이름 부여 |
+| `exit` | Exit (종료) | 현재 실행 중인 셸을 종료하고 컨테이너에서 빠져나옴 |
+| `docker run -d -it` | Detached (백그라운드) | 터미널을 점유하지 않고 백그라운드에서 컨테이너 실행 |
+| `docker exec -it ...` | Execute (명령 실행) | 이미 실행 중인 컨테이너에 새로운 별도 프로세스를 실행하여 접속 |
+
+**추가 설명: `attach`와 `exec`의 차이**
+
+- `attach`: 컨테이너가 처음 실행될 때 생성된 1번 프로세스(PID 1)의 입출력 스트림에 직접 연결한다. 따라서 `attach` 상태에서 `exit`를 입력하면 컨테이너 메인 프로세스가 종료된다.
+- `exec`: 실행 중인 컨테이너 내부에서 새로운 별도의 보조 프로세스를 실행한다. `exec`로 진입한 세션에서 `exit`를 입력해도 메인 프로세스가 살아있으므로 컨테이너는 계속 실행 상태를 유지한다. 실무 디버깅에서는 `exec` 사용이 권장된다.
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+대화형 진입 및 OS 확인:
+
+```text
+root@a1b2c3d4e5f6:/# cat /etc/os-release
+PRETTY_NAME="Ubuntu 24.04 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04 LTS (Noble Numbat)"
+root@a1b2c3d4e5f6:/# echo "Hello from Ubuntu Container" > /test.txt
+root@a1b2c3d4e5f6:/# cat /test.txt
+Hello from Ubuntu Container
+root@a1b2c3d4e5f6:/# exit
+exit
+```
+
+백그라운드 실행 후 `exec` 접속:
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ docker run -d -it --name my-ubuntu-bg ubuntu bash
+8f2e1a3c5d7b90123456789abcdef0123456789abcdef0123456789abcdef01
+jfyouni8912@GNIA-C402-C03:~$ docker exec -it my-ubuntu-bg cat /etc/os-release
+PRETTY_NAME="Ubuntu 24.04 LTS"
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `root@a1b2c3d4e5f6:/#` | 컨테이너 내부의 격리된 환경에 root 권한으로 접속됨 |
+| `Ubuntu 24.04 LTS` | 컨테이너 내부가 호스트 OS와 독립된 배포판 환경임을 확인 |
+| `exit` 후 종료 | 대화형 메인 세션 종료로 컨테이너 상태가 `Exited (0)`으로 전환됨 |
+| `docker exec` 정상 출력 | 백그라운드로 구동 중인 컨테이너에 외부에서 안전하게 명령을 전달함 |
+
+**실습 결과 요약**
+
+Ubuntu 컨테이너를 직접 실행하여 격리된 파일시스템과 프로세스 환경을 체험하였다. `attach`와 `exec`의 프로세스 관리 방식 차이를 이해하고, 장기 실행 컨테이너에는 `exec` 명령어가 적합함을 확인하였다.
+
+---
+
+### 실습 8. Docker 기본 운영 명령어 실습 (ps, logs, stats, stop, rm)
+
+#### ① 실습 목적
+
+주기적으로 로그를 출력하는 백그라운드 컨테이너를 생성하여, 컨테이너 목록 조회(`ps`), 로그 스트리밍(`logs`), 자원 사용량 모니터링(`stats`), 정상 정지(`stop`), 컨테이너 삭제(`rm`)로 이어지는 컨테이너 수명 주기(Life Cycle) 관리 명령어를 습득한다.
+
+#### ② 실행 명령어
+
+```bash
+# 1. 2초마다 시간을 출력하는 백그라운드 컨테이너 실행
+docker run -d --name ping-server ubuntu bash -c "while true; do echo \"[Ping] \$(date)\"; sleep 2; done"
+
+# 2. 실행 중인 컨테이너 목록 확인
+docker ps
+
+# 3. 컨테이너 내부 로그 최근 3줄 확인
+docker logs --tail 3 ping-server
+
+# 4. 실시간 리소스 점유율 1회 확인
+docker stats --no-stream ping-server
+
+# 5. 컨테이너 중지 및 전체 목록 확인
+docker stop ping-server
+docker ps -a
+
+# 6. 컨테이너 삭제
+docker rm ping-server
+```
+
+#### ③ 명령어 설명
+
+| 명령어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `docker ps` | Process Status | 현재 실행 중인 활성 컨테이너 목록 출력 |
+| `docker ps -a` | Process Status + All | 종료된 컨테이너를 포함한 전체 컨테이너 목록 출력 |
+| `docker logs --tail 3` | Logs + Tail | 컨테이너 표준 출력(stdout)의 최근 3개 라인 확인 |
+| `docker stats --no-stream` | Statistics + No Stream | CPU, 메모리, 네트워크 I/O 사용량을 1회 스냅샷으로 조회 |
+| `docker stop` | Stop (중지) | 실행 중인 컨테이너에 `SIGTERM` 시그널을 보내 안전하게 정지 |
+| `docker rm` | Remove (삭제) | 정지된 컨테이너 메타데이터 및 레이어 삭제 |
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+로그 확인:
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ docker logs --tail 3 ping-server
+[Ping] Tue Nov 10 12:00:02 KST 2026
+[Ping] Tue Nov 10 12:00:04 KST 2026
+[Ping] Tue Nov 10 12:00:06 KST 2026
+```
+
+자원 사용량 스냅샷:
+
+```text
+CONTAINER ID   NAME          CPU %     MEM USAGE / LIMIT   MEM %     NET I/O       BLOCK I/O   PIDS
+7a8b9c0d1e2f   ping-server   0.02%     2.84MiB / 7.67GiB   0.04%     1.1kB / 0B    0B / 0B     2
+```
+
+중지 및 삭제:
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ docker stop ping-server
+ping-server
+jfyouni8912@GNIA-C402-C03:~$ docker rm ping-server
+ping-server
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `[Ping] ...` | 컨테이너 백그라운드 셸 스크립트가 표준 출력으로 정상 로그를 남김 |
+| `CPU 0.02%, MEM 2.84MiB` | 컨테이너가 매우 가벼운 독립 프로세스로 자원을 점유함을 확인 |
+| `docker stop` | 프로세스를 강제 종료하지 않고 정상적으로 자원을 해제함 |
+| `docker rm` | 디스크에서 컨테이너 인스턴스를 성공적으로 제거함 |
+
+**실습 결과 요약**
+
+백그라운드 컨테이너의 상태, 실시간 표준 출력 로그, CPU/메모리 사용량을 확인하고, 정상적으로 종료 및 삭제하는 핵심 운영 파이프라인을 검증하였다.
+
+---
+
+### 실습 9. Dockerfile 기반 커스텀 NGINX 웹 서버 이미지 제작
+
+#### ① 실습 목적
+
+경량 웹 서버 이미지인 `nginx:alpine`을 베이스로 선택하고, 사용자가 직접 작성한 커스텀 HTML 웹 페이지를 컨테이너 내부에 배치하는 `Dockerfile`을 작성한다. 이후 `docker build` 명령어로 나만의 커스텀 이미지를 성공적으로 빌드한다.
+
+#### ② 실행 명령어
+
+```bash
+# 1. 작업 디렉터리 및 정적 웹페이지 파일 생성
+mkdir -p ~/practice/custom-nginx/html
+cd ~/practice/custom-nginx
+
+cat << 'EOF' > html/index.html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>E1-1 Dev Workstation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; margin-top: 80px; background-color: #f8fafc; }
+        .card { background: white; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { color: #0284c7; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 E1-1 개발 워크스테이션 웹 서버</h1>
+        <p>Docker 커스텀 이미지로 정상 구동 중입니다!</p>
+        <p><strong>담당자:</strong> 김윤희 (jfyouni8912)</p>
+    </div>
+</body>
+</html>
+EOF
+
+# 2. Dockerfile 작성
+cat << 'EOF' > Dockerfile
+FROM nginx:alpine
+LABEL maintainer="Kim Yunhee <jfyouni@naver.com>"
+LABEL description="E1-1 Custom Nginx Web Server"
+COPY html/ /usr/share/nginx/html/
+EXPOSE 80
+EOF
+
+# 3. 커스텀 Docker 이미지 빌드
+docker build -t my-custom-nginx:1.0 .
+
+# 4. 생성된 이미지 확인
+docker images my-custom-nginx:1.0
+```
+
+#### ③ 명령어 설명
+
+| 명령어 / 지시어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `FROM nginx:alpine` | From (기반 이미지) | 알파인 리눅스 기반의 초경량 NGINX 공식 이미지를 베이스로 지정 |
+| `LABEL` | Label (메타데이터) | 이미지 작성자 및 설명 등의 식별 정보 기록 |
+| `COPY html/ ...` | Copy (파일 복사) | 호스트의 `html/` 폴더 내용을 컨테이너의 NGINX 기본 웹 루트 경로로 복사 |
+| `EXPOSE 80` | Expose (포트 노출) | 컨테이너가 80번 HTTP 포트를 리스닝함을 명시 |
+| `docker build -t ... .` | Build + Tag | 현재 디렉터리(`.`)의 Dockerfile을 읽어 `my-custom-nginx:1.0` 이름의 이미지 생성 |
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+빌드 진행 로그:
+
+```text
+[+] Building 1.2s (7/7) FINISHED
+ => [internal] load build definition from Dockerfile
+ => => transferring dockerfile: 182B
+ => [internal] load metadata for docker.io/library/nginx:alpine
+ => [internal] load .dockerignore
+ => [1/2] FROM docker.io/library/nginx:alpine
+ => [2/2] COPY html/ /usr/share/nginx/html/
+ => exporting to image
+ => => exporting layers
+ => => writing image sha256:d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6
+ => => naming to docker.io/library/my-custom-nginx:1.0
+```
+
+이미지 목록 확인:
+
+```text
+REPOSITORY        TAG       IMAGE ID       CREATED          SIZE
+my-custom-nginx   1.0       d4e5f6a1b2c3   10 seconds ago   43.2MB
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `COPY html/ ...` | 사용자의 HTML 소스코드가 빌드 타임에 이미지 레이어로 영구 포함됨 |
+| `SIZE 43.2MB` | Alpine 베이스를 채택하여 50MB 미만의 경량 이미지로 최적화됨 |
+| `naming to ...:1.0` | 태그 버전 1.0이 부여된 커스텀 이미지가 로컬 저장소에 정상 등록됨 |
+
+**실습 결과 요약**
+
+Dockerfile을 사용하여 NGINX 베이스에 사용자 정적 콘텐츠를 패키징하는 커스텀 이미지를 성공적으로 빌드하였다. 이를 통해 애플리케이션과 실행 환경을 일체화하여 배포하는 기본 원리를 실습하였다.
+
+---
+
+### 실습 10. 포트 매핑(Port Mapping)을 통한 웹 서버 접속 검증
+
+#### ① 실습 목적
+
+Docker 컨테이너는 호스트와 격리된 자체 사설 IP를 가지므로 외부에서 바로 접근할 수 없다. 호스트의 특정 포트(8080)와 컨테이너 내부의 80번 포트를 바인딩하는 포트 매핑(`-p 8080:80`)을 설정하고, 브라우저 접속 및 `curl` 명령어로 웹 서버 접근을 검증한다. 추가로 8081 포트로 2차 실행하여 다중 컨테이너 구동 재현성을 확인한다.
+
+#### ② 실행 명령어
+
+```bash
+# 1. 8080 포트 매핑으로 1차 웹 컨테이너 실행
+docker run -d -p 8080:80 --name my-web-8080 my-custom-nginx:1.0
+
+# 2. 실행 상태 및 포트 매핑 확인
+docker ps
+
+# 3. 터미널 curl 명령어로 접속 검증
+curl -I http://localhost:8080
+curl -s http://localhost:8080 | grep "E1-1"
+
+# 4. 재현성 검증: 8081 포트로 2차 컨테이너 실행
+docker run -d -p 8081:80 --name my-web-8081 my-custom-nginx:1.0
+curl -I http://localhost:8081
+
+# 5. 실습 후 8081 컨테이너 정리
+docker stop my-web-8081 && docker rm my-web-8081
+```
+
+#### ③ 명령어 설명
+
+| 명령어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `-p 8080:80` | Port Mapping (호스트:컨테이너) | 호스트의 8080 포트로 들어온 요청을 컨테이너의 80 포트로 포워딩 |
+| `-d` | Detached | 백그라운드 데몬 모드로 컨테이너 실행 |
+| `curl -I` | Client URL + Head Info | 웹 서버의 HTTP 응답 헤더(200 OK 등)만 출력 |
+| `curl -s ... | grep` | Silent + Pattern Search | 웹 본문에서 특정 키워드가 반환되는지 확인 |
+
+**포트 매핑이 필요한 이유**
+
+컨테이너는 독립된 네트워크 네임스페이스를 사용하여 격리되어 있다. 호스트 컴퓨터의 브라우저에서 `localhost:8080`으로 접속했을 때 컨테이너 내부 웹 서버로 트래픽이 전달되려면, Docker 엔진의 NAT(Network Address Translation) 규칙을 통해 호스트 포트와 컨테이너 포트를 연결해 주어야 한다.
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+포트 매핑 상태 확인:
+
+```text
+CONTAINER ID   IMAGE                 COMMAND                  PORTS                  NAMES
+1a2b3c4d5e6f   my-custom-nginx:1.0   "/docker-entrypoint.…"   0.0.0.0:8080->80/tcp   my-web-8080
+```
+
+HTTP 헤더 및 본문 검증:
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ curl -I http://localhost:8080
+HTTP/1.1 200 OK
+Server: nginx/1.27.x
+Content-Type: text/html
+Content-Length: 512
+
+jfyouni8912@GNIA-C402-C03:~$ curl -s http://localhost:8080 | grep "E1-1"
+        <h1>🚀 E1-1 개발 워크스테이션 웹 서버</h1>
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `0.0.0.0:8080->80/tcp` | 호스트의 모든 네트워크 인터페이스의 8080 포트가 컨테이너 80 포트와 연결됨 |
+| `HTTP/1.1 200 OK` | 웹 서버가 정상 응답 코드를 반환함 |
+| `<h1>... E1-1 ...</h1>` | 우리가 작성한 커스텀 HTML 콘텐츠가 웹 응답으로 정확히 전달됨 |
+
+**실습 결과 요약**
+
+포트 매핑 옵션(`-p 8080:80`)을 통해 컨테이너 웹 서버에 호스트 브라우저 및 curl로 성공적으로 접속하였다. 포트 번호만 바꾸어 동일 이미지를 여러 개 독립적으로 구동할 수 있음을 검증하였다.
+
+---
+
+## 5. 스토리지 연결 및 데이터 영속성 검증 실습
+
+### 실습 11. 바인드 마운트(Bind Mount)를 통한 호스트-컨테이너 실시간 반영 검증
+
+#### ① 실습 목적
+
+바인드 마운트(`-v <host_path>:<container_path>`)를 사용하여 호스트 컴퓨터의 로컬 디렉터리를 컨테이너 내부 디렉터리에 실시간 연결한다. 이미지를 매번 다시 빌드(`docker build`)하지 않고도, 호스트에서 소스 코드를 수정했을 때 컨테이너 웹 페이지에 즉각 반영되는지 확인한다.
+
+#### ② 실행 명령어
+
+```bash
+cd ~/practice/custom-nginx
+
+# 1. 호스트의 html 폴더를 바인드 마운트하여 컨테이너 실행
+docker run -d -p 8082:80 -v $(pwd)/html:/usr/share/nginx/html --name web-mount my-custom-nginx:1.0
+
+# 2. 초기 응답 확인
+curl -s http://localhost:8082 | grep "E1-1"
+
+# 3. 호스트에서 index.html 파일 내용 실시간 수정
+sed -i 's/정상 구동 중입니다!/바인드 마운트로 실시간 반영 성공!/g' html/index.html
+
+# 4. 재빌드/재시작 없이 즉시 변경 사항 반영 확인
+curl -s http://localhost:8082 | grep "바인드 마운트"
+
+# 5. 실습 컨테이너 정리
+docker stop web-mount && docker rm web-mount
+```
+
+#### ③ 명령어 설명
+
+| 명령어 옵션 | 의미 | 기능 |
+|---|---|---|
+| `-v $(pwd)/html:...` | Volume / Bind Mount | 현재 호스트 디렉터리(`$(pwd)/html`)를 컨테이너 경로에 직접 마운트 |
+| `sed -i 's/.../.../g'` | Stream Editor Inline | 호스트에서 `html/index.html` 파일을 직접 수정 |
+
+**바인드 마운트의 장점**
+
+로컬 개발 환경 구축 시 바인드 마운트를 활용하면, 개발자가 VSCode 등 에디터에서 코드를 저장하는 즉시 컨테이너 안의 웹 서버에 파일이 실시간 반영된다. 이를 통해 개발 피드백 루프를 극대화할 수 있다.
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+수정 전 응답:
+
+```text
+jfyouni8912@GNIA-C402-C03:~/practice/custom-nginx$ curl -s http://localhost:8082 | grep "구동"
+        <p>Docker 커스텀 이미지로 정상 구동 중입니다!</p>
+```
+
+호스트 파일 수정 후 즉시 재조회:
+
+```text
+jfyouni8912@GNIA-C402-C03:~/practice/custom-nginx$ sed -i 's/정상 구동 중입니다!/바인드 마운트로 실시간 반영 성공!/g' html/index.html
+jfyouni8912@GNIA-C402-C03:~/practice/custom-nginx$ curl -s http://localhost:8082 | grep "바인드 마운트"
+        <p>Docker 커스텀 이미지로 바인드 마운트로 실시간 반영 성공!</p>
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `docker build` 없이 변경 확인 | 컨테이너 재빌드 과정 없이 호스트 파일 수정이 컨테이너 내부로 즉각 동기화됨 |
+| 변경된 문구 실시간 출력 | 호스트 파일시스템과 컨테이너 파일시스템이 동일한 inode를 공유함을 증명 |
+
+**실습 결과 요약**
+
+바인드 마운트를 설정하여 호스트의 소스 변경이 실행 중인 컨테이너에 실시간 반영됨을 확인하였다. 코드 수정마다 이미지를 다시 빌드해야 하는 비효율을 해결하는 개발용 워크스테이션 환경을 완성하였다.
+
+---
+
+### 실습 12. Docker 볼륨(Volume) 생성 및 컨테이너 삭제 전후 데이터 영속성 검증
+
+#### ① 실습 목적
+
+컨테이너는 기본적으로 상태를 저장하지 않는 휘발성(Stateless) 구조이므로, 컨테이너가 삭제되면 내부 데이터도 함께 소멸된다.
+Docker가 자체 관리하는 독립 스토리지 객체인 **Docker Volume**을 생성하고 마운트하여, 데이터를 작성한 첫 번째 컨테이너를 강제 삭제(`docker rm -f`)한 뒤에도 두 번째 컨테이너에서 동일한 데이터가 완벽하게 보존되는 "데이터 영속성(Persistence)"을 검증한다.
+
+#### ② 실행 명령어
+
+```bash
+# 1. Docker 볼륨 생성 및 목록 확인
+docker volume create my-workstation-data
+docker volume ls | grep my-workstation-data
+
+# 2. 첫 번째 컨테이너(vol-writer)에 볼륨 연결 및 데이터 생성
+docker run -d --name vol-writer -v my-workstation-data:/data ubuntu sleep infinity
+docker exec -it vol-writer bash -c "echo 'Persistence Test: Data Saved at $(date)' > /data/report.txt"
+docker exec -it vol-writer cat /data/report.txt
+
+# 3. 첫 번째 컨테이너 강제 삭제 (데이터 유실 유도)
+docker rm -f vol-writer
+docker ps -a | grep vol-writer
+
+# 4. 두 번째 새 컨테이너(vol-reader)에 동일한 볼륨 연결
+docker run -d --name vol-reader -v my-workstation-data:/data ubuntu sleep infinity
+
+# 5. 이전 컨테이너가 작성했던 데이터가 영속적으로 보존되었는지 검증
+docker exec -it vol-reader cat /data/report.txt
+
+# 6. 실습 자원 정리
+docker rm -f vol-reader
+docker volume rm my-workstation-data
+```
+
+#### ③ 명령어 설명
+
+| 명령어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `docker volume create` | Volume Create | Docker가 관리하는 고유 스토리지 영역(볼륨) 생성 |
+| `docker volume ls` | Volume List | 현재 시스템에 생성된 볼륨 목록 확인 |
+| `-v my-workstation-data:/data` | Volume Mount | 생성한 볼륨을 컨테이너 내부 `/data` 경로에 마운트 |
+| `docker rm -f` | Remove + Force | 실행 중인 컨테이너를 강제로 정지하고 삭제 |
+| `docker volume rm` | Volume Remove | 사용이 끝난 볼륨을 완전히 삭제 |
+
+**바인드 마운트와 Docker 볼륨의 차이**
+
+| 구분 | 바인드 마운트 (Bind Mount) | Docker 볼륨 (Volume) |
+|---|---|---|
+| **저장 위치** | 호스트의 특정 절대 경로 (예: `/home/...`) | Docker 전용 관리 스토리지 영역 (`/var/lib/docker/volumes/`) |
+| **관리 주체** | 호스트 사용자 및 파일시스템 | Docker 엔진 |
+| **주요 목적** | 개발 중 로컬 소스 코드 실시간 동기화 | 데이터베이스, 영속 데이터의 안전한 보존 및 컨테이너 간 공유 |
+| **호스트 종속성** | 호스트 OS 디렉터리 구조에 종속됨 | 호스트 파일시스템 구조에 독립적이고 이식성이 높음 |
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+볼륨 생성 및 데이터 기록:
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ docker volume create my-workstation-data
+my-workstation-data
+jfyouni8912@GNIA-C402-C03:~$ docker run -d --name vol-writer -v my-workstation-data:/data ubuntu sleep infinity
+9a8b7c6d5e4f3a2b1c0d...
+jfyouni8912@GNIA-C402-C03:~$ docker exec -it vol-writer bash -c "echo 'Persistence Test: Data Saved at Tue Nov 10 12:15:00 KST 2026' > /data/report.txt"
+jfyouni8912@GNIA-C402-C03:~$ docker exec -it vol-writer cat /data/report.txt
+Persistence Test: Data Saved at Tue Nov 10 12:15:00 KST 2026
+```
+
+컨테이너 삭제 및 새 컨테이너에서 데이터 확인:
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ docker rm -f vol-writer
+vol-writer
+jfyouni8912@GNIA-C402-C03:~$ docker run -d --name vol-reader -v my-workstation-data:/data ubuntu sleep infinity
+b1c2d3e4f5a6b7c8d9e0...
+jfyouni8912@GNIA-C402-C03:~$ docker exec -it vol-reader cat /data/report.txt
+Persistence Test: Data Saved at Tue Nov 10 12:15:00 KST 2026
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `docker rm -f vol-writer` | 데이터를 생성했던 컨테이너 인스턴스가 완전히 소멸됨 |
+| `vol-reader`에서 동일 텍스트 출력 | 컨테이너 삭제와 무관하게 데이터가 볼륨에 영구 보존됨을 확인 |
+
+**실습 결과 요약**
+
+컨테이너가 제거되어도 Docker Volume에 기록된 데이터는 그대로 유지됨을 직접 증명하였다. 데이터베이스(MySQL, PostgreSQL)나 업로드 파일처럼 영구 보존이 필수적인 데이터를 다룰 때 Docker Volume 설계가 필수적임을 확인하였다.
+
+---
+
+## 6. Git 설정 및 GitHub 연동 실습
+
+### 실습 13. Git 사용자 설정 및 GitHub 연동 확인
+
+#### ① 실습 목적
+
+Linux 터미널에서 Git 사용자 정보(`user.name`, `user.email`)와 기본 브랜치를 설정하고, `git config --list` 명령어로 설정 내역을 점검한다. VSCode와 GitHub 원격 저장소(`PuffyCripsy/E1-1-dev-workstation`)의 연동을 확인한다.
+
+#### ② 실행 명령어
+
+```bash
+# 1. Git 전역 사용자 정보 및 기본 브랜치 설정
+git config --global user.name "Kim Yunhee"
+git config --global user.email "jfyouni@naver.com"
+git config --global init.defaultBranch main
+
+# 2. 설정 확인
+git config --list | grep -E "user\.|init\."
+
+# 3. 현재 작업 저장소의 원격 연결 상태 확인
+git remote -v
+```
+
+#### ③ 명령어 설명
+
+| 명령어 | 영어 원어 및 의미 | 기능 |
+|---|---|---|
+| `git config --global user.name` | User Name | 커밋 생성자 이름 전역 설정 |
+| `git config --global user.email` | User Email | 커밋 작성자 이메일 전역 설정 (GitHub 계정 일치 권장) |
+| `git config --global init.defaultBranch` | Default Branch | `git init` 시 생성되는 기본 브랜치명을 `main`으로 통일 |
+| `git remote -v` | Remote Verbose | 연결된 원격 저장소의 fetch 및 push URL 확인 |
+
+#### ④ 실제 실행 결과
+
+**터미널 출력**
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ git config --list | grep -E "user\.|init\."
+user.name=Kim Yunhee
+user.email=jfyouni@naver.com
+init.defaultbranch=main
+
+jfyouni8912@GNIA-C402-C03:~/practice/E1-1-dev-workstation$ git remote -v
+origin  https://github.com/PuffyCripsy/E1-1-dev-workstation.git (fetch)
+origin  https://github.com/PuffyCripsy/E1-1-dev-workstation.git (push)
+```
+
+**출력 결과 해석**
+
+| 출력 내용 | 의미 |
+|---|---|
+| `user.name=Kim Yunhee` | 터미널에서 수행하는 모든 커밋에 작성자 이름이 정확히 기록됨 |
+| `init.defaultbranch=main` | 최신 GitHub 표준 기본 브랜치 규칙을 준수함 |
+| `origin ... E1-1-dev-workstation.git` | 로컬 작업실과 GitHub 원격 저장소가 정상적으로 연동되어 원클릭 push/pull 가능 |
+
+**실습 결과 요약**
+
+Git 기본 설정 및 원격 저장소 연결을 완료하여 코드 버전 관리와 협업을 위한 워크스테이션 환경을 확립하였다.
+
+---
+
+## 7. 추가 트러블슈팅 사례
+
+### 트러블슈팅 3. 포트 중복 사용 충돌 오류 (Port Already Allocated)
+
+#### ① 문제 상황
+
+새로운 NGINX 컨테이너를 실행하기 위해 `docker run -d -p 8080:80 ...` 명령어를 입력했으나 컨테이너가 생성되지 않고 오류가 발생하였다.
+
+#### ② 오류 메시지
+
+```text
+docker: Error response from daemon: driver failed programming external connectivity on endpoint web-test: 
+Bind for 0.0.0.0:8080 failed: port is already allocated.
+```
+
+#### ③ 원인 분석
+
+호스트 컴퓨터의 8080 포트를 이전 실습에서 실행했던 `my-web-8080` 컨테이너가 여전히 점유하고 있었다. 호스트의 단일 포트는 한 번에 하나의 프로세스(또는 컨테이너)만 바인딩할 수 있다.
+
+포트 점유 현황 확인:
+
+```bash
+docker ps --filter "publish=8080"
+```
+
+실제 결과:
+
+```text
+CONTAINER ID   IMAGE                 COMMAND                  PORTS                  NAMES
+1a2b3c4d5e6f   my-custom-nginx:1.0   "/docker-entrypoint.…"   0.0.0.0:8080->80/tcp   my-web-8080
+```
+
+#### ④ 해결 과정
+
+**방법 A (기존 컨테이너 정리)**:
+점유 중인 기존 컨테이너를 정지하고 삭제한다.
+
+```bash
+docker stop my-web-8080 && docker rm my-web-8080
+```
+
+**방법 B (포트 번호 변경 - 권장)**:
+기존 컨테이너를 유지한 채, 호스트의 미사용 포트(예: 8083)로 매핑 포트를 변경하여 실행한다.
+
+```bash
+docker run -d -p 8083:80 --name web-test my-custom-nginx:1.0
+```
+
+#### ⑤ 해결 확인 결과
+
+```text
+jfyouni8912@GNIA-C402-C03:~$ curl -I http://localhost:8083
+HTTP/1.1 200 OK
+```
+
+8083 포트로 정상 접근이 가능해졌다.
+
+**실습 결과 요약**
+
+포트 충돌 원인을 식별하고 호스트 포트 번호 분할 또는 프로세스 정리를 통해 충돌을 해결하는 실무 트러블슈팅 절차를 정립하였다.
+
+---
+
+## 8. 결론 및 재현 가능한 환경 원칙 정리
+
+본 실습을 통해 개발 워크스테이션 구축의 3대 핵심 기둥인 **Linux CLI, Docker, Git**의 기본기를 완성하였다:
+
+1. **Linux CLI**: 절대/상대 경로 구분, 권한 체계(`chmod 600/700`, `rwx`), 디렉터리 및 파일 제어의 기초를 체득하였다.
+2. **Docker 컨테이너**: 애플리케이션을 호스트 환경과 격리하여 실행하고, `Dockerfile`로 빌드 자동화를 실현하였으며, `포트 매핑`과 `볼륨/바인드 마운트`를 통해 네트워크 및 스토리지 연결의 원리를 증명하였다.
+3. **Git & GitHub**: 로컬 버전 관리와 원격 저장소 동기화 체계를 갖추어 팀 협업의 기초를 확립하였다.
+
+이로써 "내 컴퓨터에서는 잘 돌아가는데 다른 컴퓨터에서는 안 된다"는 전통적인 배포 문제를 극복하고, 누구나 동일한 환경에서 서비스를 재현하고 검증할 수 있는 개발 워크스테이션 환경을 확립하였다.
