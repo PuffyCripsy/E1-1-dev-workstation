@@ -1,3 +1,5 @@
+README
+
 # E1-1 개발 워크스테이션 구축
 
 > Codyssey E1-1 미션 — Linux CLI · Docker · Git/GitHub 실습 기록
