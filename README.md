@@ -37,7 +37,7 @@ Windows의 WSL2 Ubuntu 환경에서 Linux 기본 명령어, 파일 권한, Docke
 - [x]  실습 12: 컨테이너 삭제 전·후 볼륨 데이터 유지 확인
 - [x]  실습 13: Git 설정, VS Code에서 Git 저장소 확인, GitHub 인증 및 Push
 - [x]  보너스 과제: Docker Compose 설정 파일 작성, NGINX 실행, 상태 및 브라우저 접속 확인
-- [ ]  보너스 추가 검증: Compose 로그 확인 및 종료 명령 실행
+
 
 ## 3. Linux 기본 명령어 실습 (실습 1~5)
 
