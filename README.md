@@ -381,63 +381,31 @@ GitHub 저장소의 `screenshots/` 폴더에 등록된 스크린샷 8개를 실�
 
 #### 실습 4 — 파일·디렉터리 권한 변경
 
-실습4_권한변경.PNG
-
-!실습4_권한변경.PNG
-
-실습4_권한변경.PNG
+![실습4 권한변경](screenshots/실습4_권한변경.PNG)
 
 #### 실습 6 — Docker 실행 확인
 
-실습6_Docker 실행 확인.png
-
-!실습6_Docker 실행 확인.png
-
-실습6_Docker 실행 확인.png
+![실습6 Docker 실행 확인](screenshots/실습6_Docker%20실행%20확인.png)
 
 #### 실습 7 — Ubuntu 컨테이너 실행 및 파일 생성
 
-실습7_Ubuntu 컨테이너 실행 및 관리.png
+![실습7 Ubuntu 컨테이너 실행 및 관리](screenshots/실습7_Ubuntu%20컨테이너%20실행%20및%20관리.png)
 
-!실습7_Ubuntu 컨테이너 실행 및 관리.png
-
-실습7_Ubuntu 컨테이너 실행 및 관리.png
-
-실습7_Ubuntu 컨테이너 파일 생성 및 확인.png
-
-!실습7_Ubuntu 컨테이너 파일 생성 및 확인.png
-
-실습7_Ubuntu 컨테이너 파일 생성 및 확인.png
+![실습7 Ubuntu 컨테이너 파일 생성 및 확인](screenshots/실습7_Ubuntu%20컨테이너%20파일%20생성%20및%20확인.png)
 
 #### 실습 10 — NGINX 8080 포트 매핑
 
-실습10_웹서버_포트매핑_8080.png.png
-
-!실습10_웹서버_포트매핑_8080.png.png
-
-실습10_웹서버_포트매핑_8080.png.png
+![실습10 웹서버 포트매핑 8080](screenshots/실습10_웹서버_포트매핑_8080.png.png)
 
 #### 실습 13 — GitHub Push 및 VS Code 연동
 
-실습13_GitHub_Push성공.png
+![실습13 GitHub Push 성공](screenshots/실습13_GitHub_Push성공.png)
 
-!실습13_GitHub_Push성공.png
-
-실습13_GitHub_Push성공.png
-
-실습13_VSCode_GitHub연동.png
-
-!실습13_VSCode_GitHub연동.png
-
-실습13_VSCode_GitHub연동.png
+![실습13 VSCode GitHub 연동](screenshots/실습13_VSCode_GitHub연동.png)
 
 #### 보너스 — Docker Compose NGINX 웹 서버 실행
 
-보너스_Docker_Compose_웹서버_실행확인.png
-
-!보너스_Docker_Compose_웹서버_실행확인.png
-
-보너스_Docker_Compose_웹서버_실행확인.png
+![보너스 Docker Compose 웹서버 실행확인](screenshots/보너스_Docker_Compose_웹서버_실행확인.png)
 
 ## 11. 결론
 
