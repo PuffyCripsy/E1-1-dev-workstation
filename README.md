@@ -38,7 +38,6 @@ Windows의 WSL2 Ubuntu 환경에서 Linux 기본 명령어, 파일 권한, Docke
 - [x]  실습 13: Git 설정, VS Code에서 Git 저장소 확인, GitHub 인증 및 Push
 - [x]  보너스 과제: Docker Compose 설정 파일 작성, NGINX 실행, 상태 및 브라우저 접속 확인
 
-
 ## 3. Linux 기본 명령어 실습 (실습 1~5)
 
 ### 실습 1. 디렉터리와 빈 파일 생성
@@ -267,7 +266,7 @@ git status
 code .
 ```
 
-VS Code에서 저장소, `main` 브랜치, 소스 제어의 커밋 기록을 확인하였다. GitHub CLI(`gh`)를 설치하고 브라우저 인증으로 `PuffyCripsy` 계정 로그인을 완료하였다. WSL에서 브라우저가 자동 실행되지 않아 Windows 브라우저에서 `https://github.com/login/device`에 직접 접속했습니다. 인증 코드는 기록하지 않았다.
+VS Code에서 저장소, `main` 브랜치, 소스 제어의 커밋 기록을 확인하였다. GitHub CLI(`gh`)를 설치하고 브라우저 인증으로 `PuffyCripsy` 계정 로그인을 완료하였다. WSL에서 브라우저가 자동 실행되지 않아 Windows 브라우저에서 `https://github.com/login/device`에 직접 접속하였다. 인증 코드는 기록하지 않았다.
 
 ### Docker 실습 파일을 GitHub에 업로드
 
@@ -290,7 +289,7 @@ git push origin main
 
 `git push origin main`에서 `main -> main`이 표시되어 업로드 성공을 확인하였다. 이후 스크린샷은 GitHub 웹사이트에서 직접 업로드하였다.
 
-**증빙 자료:** VS Code 및 GitHub 연동 스크린샷
+**증빙 자료:** GitHub Push 성공 · VS Code 연동
 
 ## 8. 보너스 과제 — Docker Compose로 NGINX 웹 서버 실행
 
@@ -329,7 +328,7 @@ Chrome 브라우저에서 `http://localhost:8081`에 접속한 결과 **Welcome 
 
 Docker Compose 실행 및 NGINX 접속 검증 이미지
 
-**검증 범위:** `up -d`, `ps`, 웹 브라우저 접속 성공까지 확인하였다. `docker compose logs`와 `docker compose down`은 본 보고서 작성 시점에 실행 결과가 확인되지 않아 완료 항목에 포함하지 않았다.
+**검증 범위:** `docker compose up -d`, `docker compose ps` 실행과 웹 브라우저 접속 성공을 확인하였다.
 
 ## 9. 트러블슈팅
 
@@ -365,32 +364,82 @@ docker ps --filter "publish=8080"
 
 ## 10. 실습 증빙 자료
 
-실습 과정의 명령어 실행 화면, Docker 운영 결과 및 GitHub 연동 화면은 screenshots 디렉터리를 증빙 자료 위치로 사용하였다. 아래 표는 실습 항목과 증빙 자료의 대응 관계를 나타낸다.
+GitHub 저장소의 `screenshots/` 폴더에 등록된 스크린샷 8개를 실습 증빙으로 연결하였다. 별도 이미지가 등록되지 않은 실습은 본문의 명령어와 실행 결과 기록을 기준으로 기술하였다.
 
-| 실습 | 검증 대상 | 증빙 자료 |
+| 실습 | 검증 대상 | 실제 등록된 스크린샷 |
 | --- | --- | --- |
-| 1~3 | 파일 생성·복사·이동·삭제 명령 및 출력 | Linux 기본 명령어 |
-| 4~5 | 파일·디렉터리 권한 변경 전후 및 작업 경로 | 권한 및 경로 확인 |
-| 6~8 | Docker 설치·엔진 점검, hello-world, 컨테이너 운영 | Docker 기본 실습 |
-| 9 | 커스텀 NGINX 이미지 빌드 | Dockerfile 빌드 |
-| 10 | 호스트 8080 포트의 웹 서버 접속 | 포트 매핑 접속 증거 |
-| 11 | 바인드 마운트 변경 전후 웹 응답 | 바인드 마운트 |
-| 12 | 컨테이너 삭제 전후 볼륨 데이터 유지 | 볼륨 영속성 |
-| 13 | VS Code 소스 제어 및 GitHub 업로드 | Git/GitHub 연동 |
-| 보너스 | Docker Compose 컨테이너 실행 및 웹페이지 접속 | Compose 웹 서버 실행 |
+| 4 | 파일·디렉터리 권한 변경 | 실습4_권한변경.PNG |
+| 6 | Docker 실행 확인 | 실습6_Docker 실행 확인.png |
+| 7 | Ubuntu 컨테이너 실행 및 파일 생성 | 실습7_Ubuntu 컨테이너 실행 및 관리.png · 실습7_Ubuntu 컨테이너 파일 생성 및 확인.png |
+| 10 | NGINX 8080 포트 매핑 | 실습10_웹서버_포트매핑_8080.png.png |
+| 13 | GitHub Push 및 VS Code 연동 | 실습13_GitHub_Push성공.png · 실습13_VSCode_GitHub연동.png |
+| 보너스 | Docker Compose NGINX 웹 서버 실행 | 보너스_Docker_Compose_웹서버_실행확인.png |
 
-### 증빙 이미지
+### 주요 실습 스크린샷
 
-#### 실습 10. 포트 매핑 접속 화면
+#### 실습 4 — 파일·디렉터리 권한 변경
 
-NGINX 웹 서버의 8080 포트 접속 결과는 실습 스크린샷 자료에 수록하였다.
+실습4_권한변경.PNG
 
-#### 기타 실습 증빙
+!실습4_권한변경.PNG
 
-기타 실행 화면은 screenshots 디렉터리에 수록하였다. 스크린샷은 본문에 기록한 실습별 절차와 검증 결과의 증빙을 목적으로 한다.
+실습4_권한변경.PNG
+
+#### 실습 6 — Docker 실행 확인
+
+실습6_Docker 실행 확인.png
+
+!실습6_Docker 실행 확인.png
+
+실습6_Docker 실행 확인.png
+
+#### 실습 7 — Ubuntu 컨테이너 실행 및 파일 생성
+
+실습7_Ubuntu 컨테이너 실행 및 관리.png
+
+!실습7_Ubuntu 컨테이너 실행 및 관리.png
+
+실습7_Ubuntu 컨테이너 실행 및 관리.png
+
+실습7_Ubuntu 컨테이너 파일 생성 및 확인.png
+
+!실습7_Ubuntu 컨테이너 파일 생성 및 확인.png
+
+실습7_Ubuntu 컨테이너 파일 생성 및 확인.png
+
+#### 실습 10 — NGINX 8080 포트 매핑
+
+실습10_웹서버_포트매핑_8080.png.png
+
+!실습10_웹서버_포트매핑_8080.png.png
+
+실습10_웹서버_포트매핑_8080.png.png
+
+#### 실습 13 — GitHub Push 및 VS Code 연동
+
+실습13_GitHub_Push성공.png
+
+!실습13_GitHub_Push성공.png
+
+실습13_GitHub_Push성공.png
+
+실습13_VSCode_GitHub연동.png
+
+!실습13_VSCode_GitHub연동.png
+
+실습13_VSCode_GitHub연동.png
+
+#### 보너스 — Docker Compose NGINX 웹 서버 실행
+
+보너스_Docker_Compose_웹서버_실행확인.png
+
+!보너스_Docker_Compose_웹서버_실행확인.png
+
+보너스_Docker_Compose_웹서버_실행확인.png
 
 ## 11. 결론
 
 Linux CLI를 이용한 파일·권한 관리, Docker 이미지와 컨테이너의 차이, Dockerfile을 통한 실행 환경 재현, 포트 매핑, 바인드 마운트, 볼륨 영속성, Git의 로컬 버전 관리와 GitHub의 원격 저장소 역할을 실습하였다. 실제 Dockerfile과 HTML 파일을 GitHub에 업로드했으며, README와 스크린샷을 통해 실습 절차와 검증 결과를 기록하였다.
 
-**보너스 과제:** Docker Compose를 이용해 NGINX 컨테이너를 실행하고, 실행 상태 및 브라우저 접속을 검증하였다. 
+**보너스 과제:** Docker Compose를 이용해 NGINX 컨테이너를 실행하고, 실행 상태 및 브라우저 접속을 검증하였다.
+
